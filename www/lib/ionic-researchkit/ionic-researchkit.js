@@ -1987,7 +1987,10 @@ angular.module('ionicResearchKit',[])
                     '<div class="irk-text-centered">'+
                     '<h2>' + (attr.text ? attr.text : 'Something something take a picture.') + '</h2>'+
                     '<div class="irk-spacer"></div>'+
-                    '<h4>Total Taps</h4>'+ '</div>'+
+                    '<img ng-show="imgURI !== undefined" ng-src="{{imgURI}}">'+
+                    '<img ng-show="imgURI === undefined" ng-src="http://placehold.it/300x300">' +
+                    '<button class="button" ng-click="takePicture()">Take Picture</button>' +
+                    '</div>'+
                     '</div>'
         },
         link: function(scope, element, attrs, controller) {
