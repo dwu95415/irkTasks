@@ -64,7 +64,7 @@ angular.module('ionicResearchKit',[])
             var consentType = step.attr('type');
 
             results.childResults[index].id = stepId;
-            results.childResults[index].type = stepepType;
+            results.childResults[index].type = stepType;
 
             if (stepType == 'IRK-CONSENT-REVIEW-STEP' && consentType == 'review')
                 results.childResults[index].answer = (angular.isDefined(formData.consent)?formData.consent:null);
@@ -1948,12 +1948,37 @@ angular.module('ionicResearchKit',[])
 //======================================================================================
 // Usage: 
 // =====================================================================================
-/*.directive('irkImageCaptureTask', function() {
+.directive('irkImageCaptureTask', function() {
     return {
         restrict: 'E',
-        controller: ['$scope', '$element', '$attrs', '$interval', function($scope, $element, $attrs, $interval) {
+        controller: ['$scope', '$element', '$attrs', '$interval', function($scope, $element, $attrs, $cordovaCamera)) {
 
             $scope.activeStepID;
+
+            $scope.initActiveTask = function(stepID) {
+                $scope.activeStepID = stepID;
+            /*    $scope.duration = ($attrs.duration?parseInt($attrs.duration,10):10);*/
+            }
+
+            $scope.takePicture = function() {
+                var options = { 
+                quality : 75, 
+                destinationType : Camera.DestinationType.DATA_URL, 
+                sourceType : Camera.PictureSourceType.CAMERA, 
+                allowEdit : true,
+                encodingType: Camera.EncodingType.JPEG,
+                targetWidth: 300,
+                targetHeight: 300,
+                popoverOptions: CameraPopoverOptions,
+                saveToPhotoAlbum: false
+        };
+ 
+        $cordovaCamera.getPicture(options).then(function(imageData) {
+            $scope.imgURI = "data:image/jpeg;base64," + imageData;
+        }, function(err) {
+            // An error occured. Show a message to the user
+        });
+    }
 
             
         }],
@@ -1961,31 +1986,30 @@ angular.module('ionicResearchKit',[])
             return  '<div class="irk-centered">'+
                     '<div class="irk-text-centered">'+
                     '<h2>' + (attr.text ? attr.text : 'Something something take a picture.') + '</h2>'+
-                    '<progress class="irk-progress" max="{{duration}}" value="{{progress}}"></progress>'+
                     '<div class="irk-spacer"></div>'+
-                    '<h4>Total Taps</h4>'+
-                    '<h1>{{tapsCount || 0}}</h1>'+
-                    '</div>'+
-                    '</div>'+
-                    '<div class="irk-tap-container" ng-click="tap()">'+
-                    '<div class="irk-tap-button-container">'+
-                    '<button class="button button-outline button-positive irk-tap-button" ng-click="tap(\'button 1\');$event.stopPropagation()">Tap</button>'+
-                    '<button class="button button-outline button-positive irk-tap-button" ng-click="tap(\'button 2\');$event.stopPropagation()">Tap</button>'+
-                    '</div>'+
+                    '<h4>Total Taps</h4>'+ '</div>'+
                     '</div>'
         },
         link: function(scope, element, attrs, controller) {
-            /*element.addClass('irk-step');
+            element.addClass('irk-step');
 
             scope.$on("slideBox.slideChanged", function(e, index, count) {
                 var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
                 var stepType = step.prop('tagName');
                 var stepID = step.attr('id');
 
-                if (stepType=='IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepID==attrs.id) {
+                if (stepType=='IRK-IMAGE-TASK' && stepID==attrs.id) {
                     scope.initActiveTask(stepID);
+                }
+
+               /* // Stop and release any audio resources on slide change
+                if (stepType!='IRK-AUDIO-TASK' && scope.audioSample) {
+                    scope.killAudio()
                 }*/
-/*            });            
+            });             
         }
     }
-})*/
+})
+
+/*results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
+results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);*/
