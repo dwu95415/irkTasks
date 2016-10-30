@@ -1952,7 +1952,7 @@ angular.module('ionicResearchKit',[])
 //======================================================================================
 // Usage: 
 // =====================================================================================
-.directive('irkImageCaptureTask', function() {
+.directive('irkImageTask', function() {
     return {
         restrict: 'E',
         controller: ['$scope', '$element', '$attrs', '$interval', '$cordovaCamera', function($scope, $element, $attrs, $cordovaCamera) {
