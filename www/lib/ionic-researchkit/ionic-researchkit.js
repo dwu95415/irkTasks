@@ -72,11 +72,15 @@ angular.module('ionicResearchKit',[])
                 results.childResults[index].answer = (stepValue?stepValue.toDateString():null);
             else if (stepType == 'IRK-TIME-QUESTION-STEP')
                 results.childResults[index].answer = (stepValue?stepValue.toTimeString():null);
-            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK')
+            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK')
                 results.childResults[index].answer = (stepValue?stepValue:null);
             else if (stepType == 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK')
                 results.childResults[index].samples = (stepValue && stepValue.samples?stepValue.samples:null);
             else if (stepType == 'IRK-AUDIO-TASK') {
+                results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
+                results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
+            }
+            else if (stepType == 'IRK-IMAGE-TASK') {
                 results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
                 results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
             }
@@ -1951,12 +1955,13 @@ angular.module('ionicResearchKit',[])
 .directive('irkImageCaptureTask', function() {
     return {
         restrict: 'E',
-        controller: ['$scope', '$element', '$attrs', '$interval', function($scope, $element, $attrs, $cordovaCamera)) {
+        controller: ['$scope', '$element', '$attrs', '$interval', '$cordovaCamera', function($scope, $element, $attrs, $cordovaCamera) {
 
             $scope.activeStepID;
 
             $scope.initActiveTask = function(stepID) {
                 $scope.activeStepID = stepID;
+                console.log("Initiating Image Capture Task");
             /*    $scope.duration = ($attrs.duration?parseInt($attrs.duration,10):10);*/
             }
 
@@ -1995,13 +2000,14 @@ angular.module('ionicResearchKit',[])
         },
         link: function(scope, element, attrs, controller) {
             element.addClass('irk-step');
-
+            console.log("THIS IS CALLED");
             scope.$on("slideBox.slideChanged", function(e, index, count) {
                 var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
                 var stepType = step.prop('tagName');
                 var stepID = step.attr('id');
 
                 if (stepType=='IRK-IMAGE-TASK' && stepID==attrs.id) {
+                    console.log("Initiating Image Task")
                     scope.initActiveTask(stepID);
                 }
 
