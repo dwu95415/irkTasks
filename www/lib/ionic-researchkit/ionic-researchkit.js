@@ -1975,15 +1975,27 @@ angular.module('ionicResearchKit',[])
                 targetWidth: 300,
                 targetHeight: 300,
                 popoverOptions: CameraPopoverOptions,
-                saveToPhotoAlbum: false
-        };
- 
-        $cordovaCamera.getPicture(options).then(function(imageData) {
-            $scope.imgURI = "data:image/jpeg;base64," + imageData;
-        }, function(err) {
-            // An error occured. Show a message to the user
-        });
-    }
+                    saveToPhotoAlbum: false
+            };
+
+
+            console.log("HERE");
+
+            //navigator.camera.cleanup();
+            // debug
+             for(var m in Camera) {
+                 //if(typeof $cordovaCamera[m] == "function") {
+                    console.log(m);
+                    //}
+                }
+
+
+            navigator.camera.getPicture(function(imageData) {
+                $scope.imgURI = "data:image/jpeg;base64," + imageData;
+            }, function(err) {
+                // An error occured. Show a message to the user
+            }, options);
+         }
 
             
         }],
