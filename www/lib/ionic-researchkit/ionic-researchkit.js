@@ -1,4 +1,4 @@
-/** 
+/*
 * Author: Nino Guba
 * Date: 08-26-2015
 * Directives for ResearchKit in Ionic
@@ -72,7 +72,7 @@ angular.module('ionicResearchKit',[])
                 results.childResults[index].answer = (stepValue?stepValue.toDateString():null);
             else if (stepType == 'IRK-TIME-QUESTION-STEP')
                 results.childResults[index].answer = (stepValue?stepValue.toTimeString():null);
-            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK')
+            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK' && stepType != 'IRK-VIDEO-CAPTURE-TASK')
                 results.childResults[index].answer = (stepValue?stepValue:null);
             else if (stepType == 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK')
                 results.childResults[index].samples = (stepValue && stepValue.samples?stepValue.samples:null);
@@ -82,8 +82,13 @@ angular.module('ionicResearchKit',[])
             }
             else if (stepType == 'IRK-IMAGE-TASK') {
                 results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
-                results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
+                //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
             }
+            else if (stepType == 'IRK-VIDEO-CAPTURE-TASK') {
+                results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
+                //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
+            }
+
 
             if (stepType == 'IRK-NUMERIC-QUESTION-STEP')
                 results.childResults[index].unit = (stepUnit?stepUnit:null);
@@ -1957,43 +1962,45 @@ angular.module('ionicResearchKit',[])
         restrict: 'E',
         controller: ['$scope', '$element', '$attrs', '$interval', '$cordovaCamera', function($scope, $element, $attrs, $cordovaCamera) {
 
+            // TODO: Add attribute support for height, width, resolution
+
             $scope.activeStepID;
 
             $scope.initActiveTask = function(stepID) {
                 $scope.activeStepID = stepID;
                 console.log("Initiating Image Capture Task");
-            /*    $scope.duration = ($attrs.duration?parseInt($attrs.duration,10):10);*/
+                
             }
 
             $scope.takePicture = function() {
+                
+                
                 var options = { 
                 quality : 75, 
-                destinationType : Camera.DestinationType.DATA_URL, 
+                destinationType : Camera.DestinationType.FILE_URI, 
                 sourceType : Camera.PictureSourceType.CAMERA, 
                 allowEdit : true,
                 encodingType: Camera.EncodingType.JPEG,
-                targetWidth: 300,
-                targetHeight: 300,
                 popoverOptions: CameraPopoverOptions,
-                    saveToPhotoAlbum: false
+                saveToPhotoAlbum: false
             };
 
-
-            console.log("HERE");
-
-            //navigator.camera.cleanup();
-            // debug
-             for(var m in Camera) {
-                 //if(typeof $cordovaCamera[m] == "function") {
-                    console.log(m);
-                    //}
-                }
-
-
-            navigator.camera.getPicture(function(imageData) {
-                $scope.imgURI = "data:image/jpeg;base64," + imageData;
+            navigator.camera.getPicture(function(imageURI) {
+                //console.log("ImageURI: " + imageURI);
+                $scope.$parent.formData[$scope.activeStepID] = {};
+                $scope.$parent.formData[$scope.activeStepID].fileURL = imageURI
+                $scope.$apply(function() {
+                    $scope.imageData = imageURI;
+                });
+                console.log("ImageData: " + imageURI);
+               /* window.plugins.Base64.encodeFile(imageURI, function(base64){  // Encode URI to Base64 needed for contacts plugin
+                        $scope.imageData = base64;
+                    });
+                console.log("Converted to imagedata");
+                $scope.$parent.formData[$scope.activeStepID].fileURL = imageURI*/
             }, function(err) {
                 // An error occured. Show a message to the user
+                console.log("Cordova Camera error: "+ err);
             }, options);
          }
 
@@ -2002,17 +2009,22 @@ angular.module('ionicResearchKit',[])
         template: function(elem, attr) {
             return  '<div class="irk-centered">'+
                     '<div class="irk-text-centered">'+
-                    '<h2>' + (attr.text ? attr.text : 'Something something take a picture.') + '</h2>'+
-                    '<div class="irk-spacer"></div>'+
-                    '<img ng-show="imgURI !== undefined" ng-src="{{imgURI}}">'+
-                    '<img ng-show="imgURI === undefined" ng-src="http://placehold.it/300x300">' +
-                    '<button class="button" ng-click="takePicture()">Take Picture</button>' +
+                    '<h2>' + (attr.text ? attr.text : 'More detailed instructions here. Take a picture.') + '</h2>'+
+                    '<div class="irk-preview">' +
+                    '<img ng-show="imageData !== undefined" ng-src="{{imageData}}">'+
+                    '</div>' +
+                    '</div>'+
+                    '<div class="irk-text-centered">'+
+                    '<div class="irk-image-button-container">'+
+                    '<button class="button button-outline button-positive irk-image-button icon ion-android-camera" ng-click="takePicture()"></button>'+
+                    '</div>'+
+                    //'<button class="button button-outline button-positive irk-image-button irk-button-audio-play icon ion-play" ng-click="playAudio()" ng-disabled="!audioSample"></button>'+
+                    //'<button class="button" ng-click="takePicture()">Take Picture</button>' +
                     '</div>'+
                     '</div>'
         },
         link: function(scope, element, attrs, controller) {
             element.addClass('irk-step');
-            console.log("THIS IS CALLED");
             scope.$on("slideBox.slideChanged", function(e, index, count) {
                 var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
                 var stepType = step.prop('tagName');
@@ -2022,15 +2034,75 @@ angular.module('ionicResearchKit',[])
                     console.log("Initiating Image Task")
                     scope.initActiveTask(stepID);
                 }
-
-               /* // Stop and release any audio resources on slide change
-                if (stepType!='IRK-AUDIO-TASK' && scope.audioSample) {
-                    scope.killAudio()
-                }*/
             });             
         }
     }
 })
 
-/*results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
-results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);*/
+
+//======================================================================================
+// Usage: 
+// =====================================================================================
+.directive('irkVideoCaptureTask', function() {
+    return {
+        restrict: 'E',
+        controller: ['$scope', '$element', '$attrs', '$interval', '$cordovaCapture', function($scope, $element, $attrs, $cordovaCapture) {
+
+            $scope.activeStepID;
+
+            $scope.initActiveTask = function(stepID) {
+                $scope.activeStepID = stepID;
+                console.log("Initiating Video Capture Task");
+                
+            }
+
+            $scope.captureVideo = function() {
+                // TODO: duration from attribute
+              console.log("Capturing Video");
+              var options = { limit: 1, duration: 15 };
+              
+              $cordovaCapture.captureVideo(options).then(function(videoData) {
+                  $scope.test = "test2";
+                  $scope.videoSrc = videoData;
+                }, function(err) {
+                  console.log("Cordova Capture video error: "+ err);
+                });
+              }
+
+            
+        }],
+        template: function(elem, attr) {
+            return  '<div class="irk-centered">'+
+                    '<div class="irk-text-centered">'+
+                    '<h2>' + (attr.text ? attr.text : 'More detailed instructions here. Take a video.') + '</h2>'+
+                    '<div class="irk-preview">' +
+                    '<p ng-show="test !=== undefined"> {{test}} </p>' + 
+                    //'<video ng-show="videoSrc !== undefined" ng-src="{{videoSrc}} type=video/mp4">'+
+                    '</div>' +
+                    '</div>'+
+                    '<div class="irk-text-centered">'+
+                    '<div class="irk-image-button-container">'+
+                    '<button class="button button-outline button-positive irk-image-button icon ion-ios-videocam" ng-click="captureVideo()"></button>'+
+                    '</div>'+
+                    //'<button class="button button-outline button-positive irk-image-button irk-button-audio-play icon ion-play" ng-click="playAudio()" ng-disabled="!audioSample"></button>'+
+                    //'<button class="button" ng-click="takePicture()">Take Picture</button>' +
+                    '</div>'+
+                    '</div>'
+        },
+        link: function(scope, element, attrs, controller) {
+            element.addClass('irk-step');
+            scope.$on("slideBox.slideChanged", function(e, index, count) {
+                var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
+                var stepType = step.prop('tagName');
+                var stepID = step.attr('id');
+
+                if (stepType=='IRK-VIDEO-CAPTURE-TASK' && stepID==attrs.id) {
+                    console.log("Initiating Video Capture Task")
+                    scope.initActiveTask(stepID);
+                }
+
+               
+           });             
+        }
+    }
+})

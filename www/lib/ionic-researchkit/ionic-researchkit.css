@@ -315,3 +315,15 @@ button.irk-image:before {
   width: 100px;
   height: 100px;
 }
+
+.irk-image-button-container {
+  position: absolute; 
+  bottom: 150px; 
+  width: 100%;
+}
+
+.irk-image-button {
+  border-radius: 50%;
+  height: 100px;
+  width: 100px;
+}
