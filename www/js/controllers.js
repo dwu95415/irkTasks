@@ -84,7 +84,7 @@ angular.module('starter.controllers', [])
     });
   };
 
-/*   $scope.openModalVideoActiveTask = function() {
+   $scope.openModalVideoActiveTask = function() {
     $ionicModal.fromTemplateUrl('templates/modal-activetasks-video.html', {
       scope: $scope,
       animation: 'slide-in-up'
@@ -94,7 +94,19 @@ angular.module('starter.controllers', [])
     });
   };
 
-*/
+    $scope.openModalSpatialActiveTask = function() {
+    $ionicModal.fromTemplateUrl('templates/modal-activetasks-spatial.html', {
+      scope: $scope,
+      animation: 'slide-in-up'
+    }).then(function(modal) {
+      $scope.modal = modal;
+      $scope.modal.show();
+    });
+  };
+
+
+
+
   $scope.closeModal = function() {
     $scope.modal.remove();
   };

@@ -72,7 +72,7 @@ angular.module('ionicResearchKit',[])
                 results.childResults[index].answer = (stepValue?stepValue.toDateString():null);
             else if (stepType == 'IRK-TIME-QUESTION-STEP')
                 results.childResults[index].answer = (stepValue?stepValue.toTimeString():null);
-            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK' && stepType != 'IRK-VIDEO-CAPTURE-TASK')
+            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK' && stepType != 'IRK-VIDEO-CAPTURE-TASK' && stepType != 'IRK-SPATIAL-MEMORY-TASK')
                 results.childResults[index].answer = (stepValue?stepValue:null);
             else if (stepType == 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK')
                 results.childResults[index].samples = (stepValue && stepValue.samples?stepValue.samples:null);
@@ -86,6 +86,10 @@ angular.module('ionicResearchKit',[])
             }
             else if (stepType == 'IRK-VIDEO-CAPTURE-TASK') {
                 results.childResults[index].fileURL = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
+                //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
+            }
+            else if (stepType == 'IRK-SPATIAL-MEMORY-TASK') {
+                //results.childResults[index].succeded = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
                 //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
             }
 
@@ -716,7 +720,7 @@ angular.module('ionicResearchKit',[])
                 var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
                 var stepType = step.prop('tagName');
                 var consentType = step.attr('type');
-                element.toggleClass('ng-hide', (stepType=='IRK-INSTRUCTION-STEP' || stepType=='IRK-VISUAL-CONSENT-STEP' || stepType=='IRK-CONSENT-SHARING-STEP' || stepType=='IRK-CONSENT-REVIEW-STEP' || stepType=='IRK-COUNTDOWN-STEP' || stepType=='IRK-COMPLETION-STEP' || stepType=='IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' || stepType=='IRK-AUDIO-TASK'));
+                element.toggleClass('ng-hide', (stepType=='IRK-INSTRUCTION-STEP' || stepType=='IRK-VISUAL-CONSENT-STEP' || stepType=='IRK-CONSENT-SHARING-STEP' || stepType=='IRK-CONSENT-REVIEW-STEP' || stepType=='IRK-COUNTDOWN-STEP' || stepType=='IRK-COMPLETION-STEP' || stepType=='IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' || stepType=='IRK-AUDIO-TASK' || stepType =='IRK-IMAGE-TASK' || stepType =='IRK-VIDEO-CAPTURE-TASK' || stepType=='IRK-SPATIAL-MEMORY-TASK'));
             });
         }
     }
@@ -1992,12 +1996,7 @@ angular.module('ionicResearchKit',[])
                 $scope.$apply(function() {
                     $scope.imageData = imageURI;
                 });
-                console.log("ImageData: " + imageURI);
-               /* window.plugins.Base64.encodeFile(imageURI, function(base64){  // Encode URI to Base64 needed for contacts plugin
-                        $scope.imageData = base64;
-                    });
-                console.log("Converted to imagedata");
-                $scope.$parent.formData[$scope.activeStepID].fileURL = imageURI*/
+                $scope.$parent.doStepNext();
             }, function(err) {
                 // An error occured. Show a message to the user
                 console.log("Cordova Camera error: "+ err);
@@ -2052,6 +2051,7 @@ angular.module('ionicResearchKit',[])
 
             $scope.initActiveTask = function(stepID) {
                 $scope.activeStepID = stepID;
+                $scoe.isSaved = false;
                 console.log("Initiating Video Capture Task");
                 
             }
@@ -2061,12 +2061,17 @@ angular.module('ionicResearchKit',[])
               console.log("Capturing Video");
               var options = { limit: 1, duration: 15 };
               
-              $cordovaCapture.captureVideo(options).then(function(videoData) {
-                  $scope.test = "test2";
+              navigator.device.capture.captureVideo(function(videoData) {
+                $scope.$parent.formData[$scope.activeStepID] = {};
+                $scope.$parent.formData[$scope.activeStepID].fileURL = videoData
+                $scope.$apply(function() {
+                  $scope.isSaved = true;
                   $scope.videoSrc = videoData;
+                });
                 }, function(err) {
                   console.log("Cordova Capture video error: "+ err);
-                });
+                }, options);
+                $scope.$parent.doStepNext();
               }
 
             
@@ -2076,7 +2081,7 @@ angular.module('ionicResearchKit',[])
                     '<div class="irk-text-centered">'+
                     '<h2>' + (attr.text ? attr.text : 'More detailed instructions here. Take a video.') + '</h2>'+
                     '<div class="irk-preview">' +
-                    '<p ng-show="test !=== undefined"> {{test}} </p>' + 
+                    '<p ng-show="isSaved"> Your video has been saved. </p>' + 
                     //'<video ng-show="videoSrc !== undefined" ng-src="{{videoSrc}} type=video/mp4">'+
                     '</div>' +
                     '</div>'+
@@ -2084,8 +2089,6 @@ angular.module('ionicResearchKit',[])
                     '<div class="irk-image-button-container">'+
                     '<button class="button button-outline button-positive irk-image-button icon ion-ios-videocam" ng-click="captureVideo()"></button>'+
                     '</div>'+
-                    //'<button class="button button-outline button-positive irk-image-button irk-button-audio-play icon ion-play" ng-click="playAudio()" ng-disabled="!audioSample"></button>'+
-                    //'<button class="button" ng-click="takePicture()">Take Picture</button>' +
                     '</div>'+
                     '</div>'
         },
@@ -2103,6 +2106,238 @@ angular.module('ionicResearchKit',[])
 
                
            });             
+        }
+    }
+})
+
+//======================================================================================
+// Usage: 
+// The span (that is, the length of the pattern sequence) is automatically varied during the task, 
+// increasing after successful completion of a sequence, and decreasing after failures, in the range 
+// from minimumSpan to maximumSpan. The playSpeed property lets you control the speed of sequence 
+// playback, and the customTargetImage property lets you customize the shape of the tap target.
+// The game finishes when either maxTests tests have been completed, or the user has made 
+// maxConsecutiveFailures errors in a row.
+// =====================================================================================
+.directive('irkSpatialMemoryTask', function() {
+    return {
+        restrict: 'E',
+        controller: ['$scope', '$element', '$attrs', '$interval', function($scope, $element, $attrs, $interval) {
+
+            $scope.activeStepID;
+
+            $scope.tileState = {
+                QUIESCENT: 0,
+                CORRECT : 1,
+                INCORRECT: 2,
+                UNCLICKABLE: 3
+            };
+
+            $scope.state = {
+                INPROGRESS: 0,
+                SUCCEEDED: 1,
+                FAILED: 2,
+                PLAYBACK: 3,
+            }
+
+            $scope.initActiveTask = function(stepID) {
+                $scope.taskStarted = false;
+                // Play Speed
+                $scope.playDelay = $attrs.playSpeed? $attrs.playSpeed:1000;
+                // Maximum tests or failures
+                $scope.maxTests = $attrs.maxTests? $attrs.maxTests:3;
+                $scope.maxConsecutiveFailures = $attrs.maxConsecutiveFailures? $attrs.maxConsecutiveFailures:2;
+                // Test count
+                $scope.numTests = 0;
+                $scope.consecutiveFailures = 0;
+
+                $scope.activeStepID = stepID;
+                $scope.sequence = [];
+                $scope.gameBoard = [];
+                $scope.gameState = [];
+                $scope.$parent.formData[$scope.activeStepID] = {};
+                // Max and Min span
+                // TODO: Check that max and min are valid
+                $scope.maxSpan = $attrs.maximumSpan? $attrs.maximumSpan:4;
+                $scope.minSpan = $attrs.minimumSpan? $attrs.minimumSpan:2;
+                $scope.currentSpan = Math.ceil(($scope.maxSpan+$scope.minSpan)/2);
+                $scope.initializeGame($scope.currentSpan);
+                //$scope.$parent.formData[$scope.activeStepID].samples = {};
+                $scope.generateSequence($scope.currentSpan);
+                $scope.currentCount = 0;
+                // Current state of game
+                $scope.currentGameState = $scope.state.PLAYBACK;
+                setTimeout(function () { $scope.playSequence(0,null); }, 500);
+            }
+
+            $scope.initializeGame = function(gameSize){
+                for(i=0;i<gameSize;i++)
+                {
+                  // Fill an array of ids
+                  $scope.gameBoard.push([]);
+                  for(j=0;j<gameSize;j++)
+                  {
+                    $scope.gameBoard[i].push(i*gameSize + j);
+                    $scope.gameState.push($scope.tileState.UNCLICKABLE);
+                  }
+                  // In template, create a button for each ID
+                }
+
+            }
+
+            $scope.replayGame = function(){
+                $scope.sequence = [];
+                $scope.gameBoard = [];
+                $scope.gameState = [];
+                $scope.numTests +=1;
+                if($scope.numTests == $scope.maxTests)
+                {
+                    $scope.$parent.doStepNext();
+                }
+                console.log("End game state: " + $scope.currentGameState);
+                if($scope.currentGameState == $scope.state.FAILED)
+                {
+                    $scope.consecutiveFailures+=1;
+                    if($scope.consecutiveFailures == $scope.maxConsecutiveFailures)
+                    {
+                        // Failed to many times
+                        // TODO: Notification that this is the fail condition.
+                        $scope.$parent.doStepNext();
+                    }
+                    if($scope.currentSpan > $scope.minSpan)
+                    {
+                        $scope.currentSpan =$scope.currentSpan - 1;
+                    }
+                }
+                else if ($scope.currentGameState == $scope.state.SUCCEEDED)
+                {
+                    if($scope.currentSpan < $scope.maxSpan){
+                        $scope.currentSpan+=1;
+                    }
+                    $scope.consecutiveFailures =0;
+                }
+                $scope.initializeGame($scope.currentSpan);
+                $scope.generateSequence($scope.currentSpan);
+                $scope.currentCount = 0;
+                // Current state of game
+                $scope.currentGameState = $scope.state.PLAYBACK;
+                setTimeout(function () { $scope.playSequence(0,null); }, 500);
+            }
+
+            $scope.generateSequence = function(gameSize){
+                numTiles = gameSize*gameSize;
+                for(i=0; i <numTiles; i++)
+                {
+                    // create enum and then push states?
+                    $scope.sequence.push(i);
+                }
+
+                for (i = 0; i < numTiles; i++) {
+                   rand_i = Math.floor(Math.random() * (numTiles));
+                   tmp = $scope.sequence[i];
+                   $scope.sequence[i] = $scope.sequence[rand_i];
+                   $scope.sequence[rand_i] = tmp;
+                }
+                console.log($scope.sequence);
+            }
+
+            $scope.handleClick = function(tileID){
+                if($scope.sequence[$scope.currentCount] == tileID)
+                    $scope.gameState[tileID] = $scope.tileState.CORRECT;
+                else{
+                    for(i = 0; i < $scope.currentSpan*$scope.currentSpan; i++)
+                    {
+                        if($scope.gameState[i] == $scope.tileState.QUIESCENT)
+                            $scope.gameState[i] = $scope.tileState.UNCLICKABLE;
+                    }
+                    $scope.gameState[tileID] = $scope.tileState.INCORRECT;
+                    $scope.currentGameState = $scope.state.FAILED;
+                }
+                $scope.currentCount += 1;
+                if($scope.currentCount == $scope.sequence.length)
+                    $scope.currentGameState = $scope.state.SUCCEEDED;
+            }
+
+            $scope.playSequence = function(index, previousIndex){
+                if(previousIndex != null)
+                {
+                    previousTile = $scope.sequence[previousIndex];
+                    $scope.$apply(function() {
+                    // Consider returning it to unclickable and then changing all to quiescent at the end
+                     $scope.gameState[previousTile] = $scope.tileState.UNCLICKABLE;
+                    });
+                }
+                if(index >= $scope.sequence.length){
+                    $scope.$apply(function() {
+                    for(i = 0; i < $scope.currentSpan*$scope.currentSpan; i++)
+                    {
+                        $scope.gameState[i] = $scope.tileState.QUIESCENT;
+                    }
+                        $scope.currentGameState = $scope.state.INPROGRESS;
+                    });
+                    return;
+                }
+                tile = $scope.sequence[index];
+                $scope.$apply(function() {
+                     $scope.gameState[tile] = $scope.tileState.CORRECT;
+                    });
+                setTimeout(function () {
+                    $scope.playSequence(index+1,index); }, $scope.playDelay);
+            }
+            $scope.headerText = function(){
+                if($scope.currentGameState == $scope.state.PLAYBACK)
+                    return "Watch the squares light up";
+                else if ($scope.currentGameState == $scope.state.INPROGRESS)
+                    return "Tap the squares in the order they lit up";
+                else if ($scope.currentGameState == $scope.state.SUCCEEDED)
+                    return "Congratulations! Hit next to continue.";
+                else
+                    return "Try Again"
+            }
+            $scope.tileClass = function(state){
+                if(state == $scope.tileState.INCORRECT){
+                    return "irk-spatial-tile-incorrect";
+                }
+                else if(state == $scope.tileState.CORRECT)
+                    return "irk-spatial-tile-correct";
+                else   
+                    return "irk-spatial-tile-quiescent";
+
+            }
+        }],
+        template: function(elem, attr) {
+            return  '<div class="irk-centered">'+
+                    '<div class="irk-text-centered">'+
+                    '<h2 ng-bind= headerText()></h2>'+
+                    '<div class="irk-spacer"></div>'+
+                    '<div class="irk-spatial-container id="irk-spatial-container>' +
+                    '<p ng-show="currentGameState===state.FAILED">You did not quite make it through this time. Tap Next to continue.</p>'+
+                    '<div class="irk-spatial-game-row" ng-repeat = "rows in gameBoard">'+
+                    '<button ng-repeat="tile in rows" ng-Click="gameState[tile]!==tileState.QUIESCENT || handleClick(tile)"  ng-class="tileClass(gameState[tile])"></button>'+
+                    '</div>'+
+                    '</div>'+
+                    '</div>'+
+                    '<div class="irk-spacer"></div>'+
+                    '<button ng-show="currentGameState===state.FAILED || currentGameState===state.SUCCEEDED" class="button irk-small-button button-outline button-positive irk-button-step-next irk-next-button" ng-click="replayGame()">Next</button>' +
+                    '</div>'
+                    /*'<div class = "irk-spatial-score-container">' +
+                    '<h4>Squares</h4>'+
+                    '<div> {{currentSpan}}</div>' +
+                    '</div>'+
+                    '</div>'*/
+        },
+        link: function(scope, element, attrs, controller) {
+            element.addClass('irk-step');
+
+            scope.$on("slideBox.slideChanged", function(e, index, count) {
+                var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
+                var stepType = step.prop('tagName');
+                var stepID = step.attr('id');
+
+                if (stepType=='IRK-SPATIAL-MEMORY-TASK' && stepID==attrs.id) {
+                    scope.initActiveTask(stepID);
+                }
+            });            
         }
     }
 })

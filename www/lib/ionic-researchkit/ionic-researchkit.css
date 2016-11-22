@@ -327,3 +327,28 @@ button.irk-image:before {
   height: 100px;
   width: 100px;
 }
+
+.irk-spatial-tile-quiescent{
+  height: 100px;
+  width: 100px;
+}
+
+.irk-spatial-tile-correct{
+  background-color: #008CBA;
+  height: 100px;
+  width: 100px;
+}
+
+.irk-spatial-tile-incorrect{
+  background-color: #f44336;
+  height: 100px;
+  width: 100px;
+}
+
+.irk-spatial-score-container{
+  float:bottom;
+}
+
+.irk-small-button{
+  width: 20%;
+}
