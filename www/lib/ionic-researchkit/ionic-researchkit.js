@@ -89,9 +89,10 @@ angular.module('ionicResearchKit',[])
                 //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
             }
             else if (stepType == 'IRK-SPATIAL-MEMORY-TASK') {
-                //results.childResults[index].succeded = (stepValue && stepValue.fileURL?stepValue.fileURL:null);
-                //results.childResults[index].contentType = (stepValue && stepValue.contentType?stepValue.contentType:null);
-            }
+                results.childResults[index].highestCorrectSpan= (stepValue && stepValue.highestCorrectSpan?stepValue.highestCorrectSpan:null);
+                results.childResults[index].minSpan= (stepValue && stepValue.minSpan?stepValue.minSpan:null);
+                results.childResults[index].maxSpan= (stepValue && stepValue.maxSpan?stepValue.maxSpan:null);
+             }
 
 
             if (stepType == 'IRK-NUMERIC-QUESTION-STEP')
@@ -2145,10 +2146,8 @@ angular.module('ionicResearchKit',[])
                 // Play Speed
                 $scope.playDelay = $attrs.playSpeed? $attrs.playSpeed:1000;
                 // Maximum tests or failures
-                $scope.maxTests = $attrs.maxTests? $attrs.maxTests:3;
                 $scope.maxConsecutiveFailures = $attrs.maxConsecutiveFailures? $attrs.maxConsecutiveFailures:2;
                 // Test count
-                $scope.numTests = 0;
                 $scope.consecutiveFailures = 0;
 
                 $scope.activeStepID = stepID;
@@ -2158,9 +2157,13 @@ angular.module('ionicResearchKit',[])
                 $scope.$parent.formData[$scope.activeStepID] = {};
                 // Max and Min span
                 // TODO: Check that max and min are valid
-                $scope.maxSpan = $attrs.maximumSpan? $attrs.maximumSpan:4;
+                $scope.maxSpan = $attrs.maximumSpan? $attrs.maximumSpan:3;
                 $scope.minSpan = $attrs.minimumSpan? $attrs.minimumSpan:2;
-                $scope.currentSpan = Math.ceil(($scope.maxSpan+$scope.minSpan)/2);
+
+                $scope.$parent.formData[$scope.activeStepID].maxSpan = $scope.maxSpan;
+                $scope.$parent.formData[$scope.activeStepID].minSpan = $scope.minSpan;
+
+                $scope.currentSpan = $scope.minSpan;
                 $scope.initializeGame($scope.currentSpan);
                 //$scope.$parent.formData[$scope.activeStepID].samples = {};
                 $scope.generateSequence($scope.currentSpan);
@@ -2189,11 +2192,7 @@ angular.module('ionicResearchKit',[])
                 $scope.sequence = [];
                 $scope.gameBoard = [];
                 $scope.gameState = [];
-                $scope.numTests +=1;
-                if($scope.numTests == $scope.maxTests)
-                {
-                    $scope.$parent.doStepNext();
-                }
+               
                 console.log("End game state: " + $scope.currentGameState);
                 if($scope.currentGameState == $scope.state.FAILED)
                 {
@@ -2202,17 +2201,19 @@ angular.module('ionicResearchKit',[])
                     {
                         // Failed to many times
                         // TODO: Notification that this is the fail condition.
+                        //if($scope.currentSpan != $scope.minSpan)
+                        $scope.$parent.formData[$scope.activeStepID].highestCorrectSpan = $scope.currentSpan-1;
                         $scope.$parent.doStepNext();
-                    }
-                    if($scope.currentSpan > $scope.minSpan)
-                    {
-                        $scope.currentSpan =$scope.currentSpan - 1;
                     }
                 }
                 else if ($scope.currentGameState == $scope.state.SUCCEEDED)
                 {
                     if($scope.currentSpan < $scope.maxSpan){
                         $scope.currentSpan+=1;
+                    }
+                    else{
+                        $scope.$parent.formData[$scope.activeStepID].highestCorrectSpan = $scope.currentSpan;
+                        $scope.$parent.doStepNext();
                     }
                     $scope.consecutiveFailures =0;
                 }
