@@ -2379,7 +2379,25 @@ angular.module('ionicResearchKit',[])
                 // stepcount
                 $scope.$parent.formData[$scope.activeStepID].firstLegSteps=[];
                 $scope.$parent.formData[$scope.activeStepID].secondLegSteps=[];
+                
+
+                // Is Pedometer Available?
                 $scope.pedometerAvailable = false;
+                if(ionic.Platform.isAndroid())
+                {
+                    stepcounter.deviceCanCountSteps(function(isAvailable){
+                        $scope.pedometerAvailable = isAvailable;
+                    }, function(){
+                        console.log("Error with Android step counter.");
+                    });
+                }
+                else
+                {
+                    // Temporarily no iOS support for step counting.
+                    $scope.pedometerAvailable = false;
+                }
+
+                
                 // pedometer.isStepCountingAvailable(successCallback, failureCallback);
                 // stepcounter.deviceCanCountSteps() 
                 $scope.numSteps = $attrs.numSteps?$attrs.numSteps:20;
@@ -2392,7 +2410,7 @@ angular.module('ionicResearchKit',[])
                 $scope.countdownTime = 5;
                 $scope.startCountdown();
                 
-
+                $scope.stepCounterOffset = 0;
                 $scope.instructions = null;
                 $scope.timer = null;
             }
@@ -2415,7 +2433,7 @@ angular.module('ionicResearchKit',[])
                     {
                         $interval.cancel($scope.currentTimer);
                         $scope.instructions = "Walk up to " + $scope.numSteps + " steps in a straight line.";
-                        $scope.textToSpeech($scope.instructions, $scope.trackFirstLeg());
+                        $scope.textToSpeech($scope.instructions, $scope.trackFirstLeg);
                     }
                     else{
                         $scope.countdownTime -=1;
@@ -2438,11 +2456,14 @@ angular.module('ionicResearchKit',[])
                 if($scope.pedometerAvailable)
                 {
                     // relelvant only for android
-                    $scope.stepCount = stepcounter.getStepCount(function(){
-                        console.log("Getting step count.");
+                    stepcounter.getStepCount(function(count){
+                        //console.log("Getting step count: " + count);
+                        $scope.stepCount = count;
                     }, function(){
                         console.log("Error in step counter");
                     });
+
+                    // make sure this is syncrhonous
                     if($scope.stepCount >= $scope.numSteps)
                     {
                         return true;
@@ -2456,8 +2477,29 @@ angular.module('ionicResearchKit',[])
                 }
             }
 
+
+            $scope.startStepCounter = function() {
+                if($scope.pedometerAvailable){
+                    stepcounter.start($scope.stepCounterOffset, function(message){
+                            console.log(message);
+                        }, function(){
+                            console.log("Failed to start Android step counter.");
+                        });
+                }
+            }
+
+            $scope.stopStepCounter = function() {
+                if($scope.pedometerAvailable){
+                    stepcounter.stop(function(message){
+                            console.log("Stopped Android Step Counter.");
+                        }, function(){
+                            console.log("Failed to stop Android step counter.");
+                        });
+                }
+            }
             $scope.trackFirstLeg = function()
             {
+                $scope.stepCount = 0;
                 
                 if(!ionic.Platform.isAndroid())
                 {
@@ -2465,17 +2507,19 @@ angular.module('ionicResearchKit',[])
                 }
                 else
                 {
+                    $scope.startStepCounter();
                     var progress = 0;
                     $scope.currentTimer=$interval(function() {
                     if(!$scope.pedometerAvailable)
                     {
                         $scope.timer = $scope.stepDuration-progress;
                     }
-                    if (endLegCondition(progress))
+                    if ($scope.endLegCondition(progress))
                     {
                         $interval.cancel($scope.currentTimer);
+                        $scope.stopStepCounter();
                         $scope.instructions = "Turn around, and walk back to where you started.";
-                        $scope.textToSpeech($scope.instructions, $scope.trackSecondLeg());
+                        $scope.textToSpeech($scope.instructions, $scope.trackSecondLeg);
                     }
                     else{
                         $scope.updateAcceleration($scope.$parent.formData[$scope.activeStepID].firstLegAccel,
@@ -2488,23 +2532,26 @@ angular.module('ionicResearchKit',[])
 
             $scope.trackSecondLeg = function()
             {
+                $scope.stepCount = 0;
                 if(!ionic.Platform.isAndroid())
                 {
 
                 }
                 else
                 {
+                    $scope.startStepCounter();
                     var progress = 0;
                     $scope.currentTimer = $interval(function() {
                     if(!$scope.pedometerAvailable)
                     {
                         $scope.timer = $scope.stepDuration-progress;
                     }
-                    if (endLegCondition(progress))
+                    if ($scope.endLegCondition(progress))
                     {
                         $interval.cancel($scope.currentTimer);
+                        $scope.stopStepCounter();
                         $scope.instructions = "Stand still for " + $scope.restDuration + " seconds.";
-                        $scope.textToSpeech($scope.instructions, $scope.trackRestingLeg());
+                        $scope.textToSpeech($scope.instructions, $scope.trackRestingLeg);
                     }
                     else{
                         $scope.updateAcceleration($scope.$parent.formData[$scope.activeStepID].secondLegAccel,
@@ -2525,6 +2572,7 @@ angular.module('ionicResearchKit',[])
                     if (progress == $scope.restDuration)
                     {
                         $interval.cancel($scope.currentTimer);
+                        $scope.textToSpeech("Activity Completed!", function(){});
                         $scope.$parent.doStepNext();
                     }
                     else{
@@ -2546,7 +2594,7 @@ angular.module('ionicResearchKit',[])
                     stepsList.push({
                         'steps': stepCount,
                         'time': timeStamp,
-                    };);
+                    });
                   }
                   accelList.push({
                     'x': X,
@@ -2561,7 +2609,9 @@ angular.module('ionicResearchKit',[])
 
             $scope.secondsToMinutesSeconds = function(seconds){
                 var minutes = Math.floor(seconds/60);
-                var seconds = '0' + seconds%60;
+                var seconds = seconds%60;
+                if(seconds < 10)
+                    seconds = '0' + seconds;
                 return ''+minutes+':'+seconds;
             }
 
