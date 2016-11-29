@@ -94,7 +94,7 @@ angular.module('starter.controllers', [])
     });
   };
 
-    $scope.openModalSpatialActiveTask = function() {
+  $scope.openModalSpatialActiveTask = function() {
     $ionicModal.fromTemplateUrl('templates/modal-activetasks-spatial.html', {
       scope: $scope,
       animation: 'slide-in-up'
@@ -104,6 +104,15 @@ angular.module('starter.controllers', [])
     });
   };
 
+  $scope.openModalGaitBalanceActiveTask = function() {
+    $ionicModal.fromTemplateUrl('templates/modal-activetasks-gait-balance.html', {
+      scope: $scope,
+      animation: 'slide-in-up'
+    }).then(function(modal) {
+      $scope.modal = modal;
+      $scope.modal.show();
+    });
+  };
 
 
 

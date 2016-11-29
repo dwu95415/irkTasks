@@ -72,7 +72,14 @@ angular.module('ionicResearchKit',[])
                 results.childResults[index].answer = (stepValue?stepValue.toDateString():null);
             else if (stepType == 'IRK-TIME-QUESTION-STEP')
                 results.childResults[index].answer = (stepValue?stepValue.toTimeString():null);
-            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK' && stepType != 'IRK-VIDEO-CAPTURE-TASK' && stepType != 'IRK-SPATIAL-MEMORY-TASK')
+            else if (stepType != 'IRK-INSTRUCTION-STEP' && stepType != 'IRK-COUNTDOWN-STEP' 
+                        && stepType != 'IRK-COMPLETION-STEP' && stepType != 'IRK-VISUAL-CONSENT-STEP' 
+                        && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='signature') 
+                        && !(stepType=='IRK-CONSENT-REVIEW-STEP' && consentType=='name') 
+                        && stepType != 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' 
+                        && stepType != 'IRK-AUDIO-TASK'&& stepType != 'IRK-IMAGE-TASK' 
+                        && stepType != 'IRK-VIDEO-CAPTURE-TASK' && stepType != 'IRK-SPATIAL-MEMORY-TASK'
+                        && stepType != 'IRK-GAIT-BALANCE-TASK')
                 results.childResults[index].answer = (stepValue?stepValue:null);
             else if (stepType == 'IRK-TWO-FINGER-TAPPING-INTERVAL-TASK')
                 results.childResults[index].samples = (stepValue && stepValue.samples?stepValue.samples:null);
@@ -93,7 +100,14 @@ angular.module('ionicResearchKit',[])
                 results.childResults[index].minSpan= (stepValue && stepValue.minSpan?stepValue.minSpan:null);
                 results.childResults[index].maxSpan= (stepValue && stepValue.maxSpan?stepValue.maxSpan:null);
              }
-
+            else if (stepType == 'IRK-GAIT-BALANCE-TASK') {
+                // results here
+                results.childResults[index].firstLegAccel= (stepValue && stepValue.firstLegAccel?stepValue.firstLegAccel:null);
+                results.childResults[index].secondLegAccel= (stepValue && stepValue.secondLegAccel?stepValue.secondLegAccel:null);
+                results.childResults[index].restingLeg= (stepValue && stepValue.restingLeg?stepValue.firstLeg:null);
+                results.childResults[index].firstLegSteps= (stepValue && stepValue.firstLegSteps?stepValue.firstLegSteps:null);
+                results.childResults[index].secondLegSteps= (stepValue && stepValue.secondLegSteps?stepValue.secondLegSteps:null);
+             }
 
             if (stepType == 'IRK-NUMERIC-QUESTION-STEP')
                 results.childResults[index].unit = (stepUnit?stepUnit:null);
@@ -721,7 +735,7 @@ angular.module('ionicResearchKit',[])
                 var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
                 var stepType = step.prop('tagName');
                 var consentType = step.attr('type');
-                element.toggleClass('ng-hide', (stepType=='IRK-INSTRUCTION-STEP' || stepType=='IRK-VISUAL-CONSENT-STEP' || stepType=='IRK-CONSENT-SHARING-STEP' || stepType=='IRK-CONSENT-REVIEW-STEP' || stepType=='IRK-COUNTDOWN-STEP' || stepType=='IRK-COMPLETION-STEP' || stepType=='IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' || stepType=='IRK-AUDIO-TASK' || stepType =='IRK-IMAGE-TASK' || stepType =='IRK-VIDEO-CAPTURE-TASK' || stepType=='IRK-SPATIAL-MEMORY-TASK'));
+                element.toggleClass('ng-hide', (stepType=='IRK-INSTRUCTION-STEP' || stepType=='IRK-VISUAL-CONSENT-STEP' || stepType=='IRK-CONSENT-SHARING-STEP' || stepType=='IRK-CONSENT-REVIEW-STEP' || stepType=='IRK-COUNTDOWN-STEP' || stepType=='IRK-COMPLETION-STEP' || stepType=='IRK-TWO-FINGER-TAPPING-INTERVAL-TASK' || stepType=='IRK-AUDIO-TASK' || stepType =='IRK-IMAGE-TASK' || stepType =='IRK-VIDEO-CAPTURE-TASK' || stepType=='IRK-SPATIAL-MEMORY-TASK' || stepType == 'IRK-GAIT-BALANCE-TASK'));
             });
         }
     }
@@ -1671,7 +1685,7 @@ angular.module('ionicResearchKit',[])
                 progressEl.toggleClass('irk-progress-started', isVisible);
             }
 
-            $scope.startProgress = function() {
+           $scope.startProgress = function() {
                 $scope.duration = ($attrs.duration?parseInt($attrs.duration,10):20);
                 $scope.progress = 0;
                 $scope.toggleProgressBar(true);
@@ -2336,6 +2350,243 @@ angular.module('ionicResearchKit',[])
                 var stepID = step.attr('id');
 
                 if (stepType=='IRK-SPATIAL-MEMORY-TASK' && stepID==attrs.id) {
+                    scope.initActiveTask(stepID);
+                }
+            });            
+        }
+    }
+})
+
+//======================================================================================
+// Usage: 
+// =====================================================================================
+.directive('irkGaitBalanceTask', function() {
+    return {
+        restrict: 'E',
+        controller: ['$scope', '$element', '$attrs', '$interval', '$cordovaDeviceMotion', function($scope, $element, $attrs, $interval, $cordovaDeviceMotion) {
+
+            $scope.activeStepID;
+
+            $scope.initActiveTask = function(stepID) {
+                $scope.activeStepID = stepID;
+                 
+                // acceleration
+                $scope.$parent.formData[$scope.activeStepID] = {};
+                $scope.$parent.formData[$scope.activeStepID].firstLegAccel=[];
+                $scope.$parent.formData[$scope.activeStepID].secondLegAccel=[];
+                $scope.$parent.formData[$scope.activeStepID].restingLeg=[];
+
+                // stepcount
+                $scope.$parent.formData[$scope.activeStepID].firstLegSteps=[];
+                $scope.$parent.formData[$scope.activeStepID].secondLegSteps=[];
+                $scope.pedometerAvailable = false;
+                // pedometer.isStepCountingAvailable(successCallback, failureCallback);
+                // stepcounter.deviceCanCountSteps() 
+                $scope.numSteps = $attrs.numSteps?$attrs.numSteps:20;
+                $scope.distanceInMeters = $attrs.distanceInMeters?$attrs.distanceInMeters:10;
+                $scope.stepDuration = $attrs.stepDuration?$attrs.stepDuration:5;
+                $scope.restDuration = $attrs.restDuration?$attrs.restDuration:10;
+                //TODO: $scope.validateParameters();
+                
+                $scope.stepCount = 0;
+                $scope.countdownTime = 5;
+                $scope.startCountdown();
+                
+
+                $scope.instructions = null;
+                $scope.timer = null;
+            }
+
+            $scope.textToSpeech = function(instruction, callback){
+                var instruct = instruction;
+                window.TTS
+                    .speak({
+                        text: instruct,
+                        locale: 'en-US',
+                        rate: 1.00
+                    }, callback);
+            }
+
+            
+
+             $scope.startCountdown = function() {
+                $scope.currentTimer = $interval(function() {
+                    if ($scope.countdownTime == 0)
+                    {
+                        $interval.cancel($scope.currentTimer);
+                        $scope.instructions = "Walk up to " + $scope.numSteps + " steps in a straight line.";
+                        $scope.textToSpeech($scope.instructions, $scope.trackFirstLeg());
+                    }
+                    else{
+                        $scope.countdownTime -=1;
+                    }
+                }, 1000);
+            } 
+
+            $scope.iosStepCountLeg = function(callback){
+
+
+                // start step counter
+
+                // on each update- record acceleromter and pedometer time
+            }
+
+            // onsuccess if stepcount = whatever then do whatever
+
+            $scope.endLegCondition = function(progress)
+            {
+                if($scope.pedometerAvailable)
+                {
+                    // relelvant only for android
+                    $scope.stepCount = stepcounter.getStepCount(function(){
+                        console.log("Getting step count.");
+                    }, function(){
+                        console.log("Error in step counter");
+                    });
+                    if($scope.stepCount >= $scope.numSteps)
+                    {
+                        return true;
+                    }
+                    else{
+                        return false;
+                    }
+                }
+                else{
+                    return (progress == $scope.stepDuration);
+                }
+            }
+
+            $scope.trackFirstLeg = function()
+            {
+                
+                if(!ionic.Platform.isAndroid())
+                {
+
+                }
+                else
+                {
+                    var progress = 0;
+                    $scope.currentTimer=$interval(function() {
+                    if(!$scope.pedometerAvailable)
+                    {
+                        $scope.timer = $scope.stepDuration-progress;
+                    }
+                    if (endLegCondition(progress))
+                    {
+                        $interval.cancel($scope.currentTimer);
+                        $scope.instructions = "Turn around, and walk back to where you started.";
+                        $scope.textToSpeech($scope.instructions, $scope.trackSecondLeg());
+                    }
+                    else{
+                        $scope.updateAcceleration($scope.$parent.formData[$scope.activeStepID].firstLegAccel,
+                                                    $scope.$parent.formData[$scope.activeStepID].firstLegSteps);
+                        progress++;
+                    }
+                }, 1000);
+                }
+            }
+
+            $scope.trackSecondLeg = function()
+            {
+                if(!ionic.Platform.isAndroid())
+                {
+
+                }
+                else
+                {
+                    var progress = 0;
+                    $scope.currentTimer = $interval(function() {
+                    if(!$scope.pedometerAvailable)
+                    {
+                        $scope.timer = $scope.stepDuration-progress;
+                    }
+                    if (endLegCondition(progress))
+                    {
+                        $interval.cancel($scope.currentTimer);
+                        $scope.instructions = "Stand still for " + $scope.restDuration + " seconds.";
+                        $scope.textToSpeech($scope.instructions, $scope.trackRestingLeg());
+                    }
+                    else{
+                        $scope.updateAcceleration($scope.$parent.formData[$scope.activeStepID].secondLegAccel,
+                                                    $scope.$parent.formData[$scope.activeStepID].secondLegSteps);
+                        progress++;
+                    }
+                }, 1000);
+                }
+            }
+
+            $scope.trackRestingLeg = function()
+            {
+                    var progress = 0;
+                    $scope.currentTimer = $interval(function() {
+                    //$scope.$apply(function() {
+                        $scope.timer = $scope.restDuration-progress;
+                   // });
+                    if (progress == $scope.restDuration)
+                    {
+                        $interval.cancel($scope.currentTimer);
+                        $scope.$parent.doStepNext();
+                    }
+                    else{
+                        $scope.updateAcceleration($scope.$parent.formData[$scope.activeStepID].restingLeg, null);
+                        progress++;
+                    }
+                }, 1000);
+            }
+
+            $scope.updateAcceleration = function(accelList, stepsList){
+                $cordovaDeviceMotion.getCurrentAcceleration().then(function(result) {
+                  var X = result.x;
+                  var Y = result.y;
+                  var Z = result.z;
+                  var timeStamp = result.timestamp;
+                  if(stepsList && $scope.pedometerAvailable)
+                  {
+                    var stepCount = $scope.stepCount;
+                    stepsList.push({
+                        'steps': stepCount,
+                        'time': timeStamp,
+                    };);
+                  }
+                  accelList.push({
+                    'x': X,
+                    'y': Y,
+                    'z': Z,
+                    'time': timeStamp,
+                  });
+                }, function(err) {
+                  console.log("Error in acceleration tracking " + err);
+                });
+            }
+
+            $scope.secondsToMinutesSeconds = function(seconds){
+                var minutes = Math.floor(seconds/60);
+                var seconds = '0' + seconds%60;
+                return ''+minutes+':'+seconds;
+            }
+
+        }],
+        template: function(elem, attr) {
+            return  '<div class="irk-centered">'+
+                    '<div class="irk-text-centered">'+
+                    '<h2 ng-show="countdownTime>0">Starting activity in <br></br>{{countdownTime}}</h2>'+
+                    '<h1 ng-show="instructions">{{instructions}}</h1>'+
+                    '<irk-spacer></irk-spacer>' + 
+                    '<div ng-show="timer">'+
+                    '{{secondsToMinutesSeconds(timer)}}'+
+                    '</div>'+
+                    '</div>'+
+                    '</div>'
+        },
+        link: function(scope, element, attrs, controller) {
+            element.addClass('irk-step');
+
+            scope.$on("slideBox.slideChanged", function(e, index, count) {
+                var step = angular.element(document.querySelectorAll('.irk-slider-slide')[index].querySelector('.irk-step'));
+                var stepType = step.prop('tagName');
+                var stepID = step.attr('id');
+
+                if (stepType=='IRK-GAIT-BALANCE-TASK' && stepID==attrs.id) {
                     scope.initActiveTask(stepID);
                 }
             });            
